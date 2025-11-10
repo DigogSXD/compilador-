@@ -1,9 +1,3 @@
-# Programas 02 e 03: Analisador Léxico Completo (Versão Atualizada)
-# Disciplina: Compiladores
-#
-# Esta versão foi modificada para reconhecer '(', ')', '=' e '%' como tokens válidos.
-
-# Classe para representar um Token
 class Token:
     def __init__(self, tipo, valor, linha):
         self.tipo = tipo
