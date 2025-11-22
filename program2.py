@@ -187,87 +187,73 @@ class AnalisadorLexico:
 
         return Token('FIM_DE_ARQUIVO', None, self.linha)
 
-# --- Área de Testes (MODIFICADA) ---
 if __name__ == "__main__":
-    
-    # --- 1. ANÁLISE DO EXEMPLO FIXO ---
-    # Este exemplo agora está (quase) sintaticamente correto
-    # O único erro esperado é o '#' e o '@'
+    # --- 1. ANÁLISE DO EXEMPLO FIXO (MANTIDA) ---
     codigo_exemplo = """
-    // Exemplo atualizado para testar os novos tokens
-    
+    // Exemplo atualizado
     variavel_x = 10.5;
-    
     se (variavel_x > 10) entao
         resto = variavel_x % 2;
-    senao
-        variavel_x = 0;
-        
-    // Teste de erro
-    total = 100 # 5; @
     """
-
     print("--- 1. ANÁLISE DO EXEMPLO FIXO ---")
-    
     analisador_fixo = AnalisadorLexico(codigo_exemplo)
-
     while True:
         token = analisador_fixo.obter_proximo_token()
         print(token)
         if token.tipo == 'FIM_DE_ARQUIVO':
             break
             
-    print("\n--- TABELA DE SÍMBOLOS (EXEMPLO FIXO) ---")
-    for simbolo, token_info in analisador_fixo.tabela_simbolos.items():
-        print(f"'{simbolo}': {token_info.tipo}")
-
-
-    # --- 2. NOVA SEÇÃO INTERATIVA ---
+    # --- 2. NOVA SEÇÃO INTERATIVA (CORRIGIDA) ---
     print("\n" + "="*40)
-    print("--- 2. TESTE INTERATIVO (AVALIAÇÃO) ---")
-    print("Digite o código para analisar (ou 'sair' para terminar):")
-
+    print("--- 2. TESTE INTERATIVO MULTI-LINHA ---")
+    
     while True:
-        try:
-            # Pede ao usuário para digitar o código
-            codigo_usuario = input("\n>>> ")
+        print("\nDigite o código abaixo.")
+        print("Pressione [Enter] para nova linha.")
+        print("Digite 'FIM' (em uma nova linha) para processar ou 'SAIR' para fechar.")
+        print("-" * 30)
 
-            # Condição para sair do loop
-            if codigo_usuario.lower() == 'sair':
+        linhas_usuario = []
+        
+        # Loop para capturar múltiplas linhas
+        while True:
+            try:
+                linha = input()
+            except EOFError:
+                break
+                
+            # Verifica se o usuário quer sair do programa
+            if linha.strip().lower() == 'sair':
                 print("Programa encerrado.")
+                exit()
+            
+            # Verifica se o usuário terminou de digitar esse bloco
+            if linha.strip().upper() == 'FIM':
                 break
             
-            # Garante que a entrada não está vazia
-            if not codigo_usuario.strip():
-                continue
+            linhas_usuario.append(linha)
 
-            print(f"--- Analisando: '{codigo_usuario}' ---")
-            
-            # Cria um NOVO analisador para cada entrada do usuário
+        # Se não digitou nada e deu FIM, volta para o inicio
+        if not linhas_usuario:
+            continue
+
+        # Junta as linhas com quebra de linha (\n) para o analisador entender
+        codigo_usuario = "\n".join(linhas_usuario)
+
+        print(f"\n--- Analisando Bloco ---")
+        try:
             analisador_interativo = AnalisadorLexico(codigo_usuario)
-            
             tokens_encontrados = []
-            # Loop para obter todos os tokens da entrada
+            
             while True:
                 token = analisador_interativo.obter_proximo_token()
                 tokens_encontrados.append(str(token))
                 if token.tipo == 'FIM_DE_ARQUIVO':
                     break
             
-            print("Tokens:")
+            print("Tokens Encontrados:")
             for t in tokens_encontrados:
                 print(f"    {t}")
                 
-            print("\nNovos Identificadores na Tabela de Símbolos:")
-            # Mostra apenas os novos identificadores adicionados
-            novos_identificadores = 0
-            for simbolo, token_info in analisador_interativo.tabela_simbolos.items():
-                if token_info.tipo == 'IDENTIFICADOR':
-                    print(f"    '{simbolo}': {token_info.tipo}")
-                    novos_identificadores += 1
-            
-            if novos_identificadores == 0:
-                print("    (Nenhum novo identificador adicionado)")
-
         except Exception as e:
-            print(f"Ocorreu um erro inesperado: {e}")
+            print(f"Ocorreu um erro: {e}")
