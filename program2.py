@@ -7,7 +7,7 @@ class Token:
     def __repr__(self):
         return f"Token({self.tipo}, '{self.valor}', Linha: {self.linha})"
 
-# Classe principal do Analisador Léxico
+# --- CLASSE ANALISADOR LÉXICO ---
 class AnalisadorLexico:
     def __init__(self, codigo_fonte):
         self.codigo = codigo_fonte
@@ -15,13 +15,14 @@ class AnalisadorLexico:
         self.linha = 1
         self.char_atual = self.codigo[self.posicao] if self.posicao < len(self.codigo) else None
         
-        # Requisito: Inicializar a tabela de símbolos com palavras-chave
+        # 1. REQUISITO: Inicializar a tabela de símbolos com mais de uma palavra-chave
         self.tabela_simbolos = {
             'se': Token('PALAVRA_CHAVE', 'se', 0),
             'entao': Token('PALAVRA_CHAVE', 'entao', 0),
             'senao': Token('PALAVRA_CHAVE', 'senao', 0),
             'enquanto': Token('PALAVRA_CHAVE', 'enquanto', 0),
             'faca': Token('PALAVRA_CHAVE', 'faca', 0),
+            'retorne': Token('PALAVRA_CHAVE', 'retorne', 0),
         }
 
     def avancar(self):
@@ -45,12 +46,12 @@ class AnalisadorLexico:
     def pular_espacos_e_comentarios(self):
         """Pula espaços em branco e os dois tipos de comentários de C."""
         while self.char_atual is not None:
-            # Requisito: Remover espaços em branco
+            # 6. REQUISITO: Remover espaços em branco
             if self.char_atual.isspace():
                 self.avancar()
                 continue
             
-            # Requisito: Remover os dois tipos de comentários da linguagem "C"
+            # 7. REQUISITO: Remover os dois tipos de comentários (// e /* */)
             if self.char_atual == '/':
                 if self.peek() == '/': # Comentário de linha única: //
                     while self.char_atual is not None and self.char_atual != '\n':
@@ -76,7 +77,7 @@ class AnalisadorLexico:
             resultado += self.char_atual
             self.avancar()
         
-        # Requisito: Reconhecer números decimais
+        # 2. REQUISITO: Reconhecer números decimais
         if self.char_atual == '.':
             resultado += '.'
             self.avancar()
@@ -93,18 +94,17 @@ class AnalisadorLexico:
             resultado += self.char_atual
             self.avancar()
         
-        # Verifica se é uma palavra-chave
+        # Verifica se é palavra-chave já existente
         token = self.tabela_simbolos.get(resultado, None)
         if token:
             return Token(token.tipo, token.valor, self.linha)
         
-        # Requisito: Reconhecer identificadores e armazená-los na tabela de símbolos
+        # 5. REQUISITO: Reconhecer identificadores e armazená-los na tabela
         token = Token('IDENTIFICADOR', resultado, self.linha)
         self.tabela_simbolos[resultado] = token
         return token
 
     def obter_proximo_token(self):
-        """Retorna o próximo token do código fonte."""
         while self.char_atual is not None:
             self.pular_espacos_e_comentarios()
 
@@ -117,143 +117,147 @@ class AnalisadorLexico:
             if self.char_atual.isalpha() or self.char_atual == '_':
                 return self.extrair_identificador()
 
-            # --- OPERADORES ARITMÉTICOS ---
+            # 3. REQUISITO: Reconhecer os quatro operadores aritméticos
             if self.char_atual == '+':
                 self.avancar()
-                return Token('OPERADOR_ARITMETICO', '+', self.linha)
+                return Token('OP_ARITMETICO', '+', self.linha)
             if self.char_atual == '-':
                 self.avancar()
-                return Token('OPERADOR_ARITMETICO', '-', self.linha)
+                return Token('OP_ARITMETICO', '-', self.linha)
             if self.char_atual == '*':
                 self.avancar()
-                return Token('OPERADOR_ARITMETICO', '*', self.linha)
+                return Token('OP_ARITMETICO', '*', self.linha)
             if self.char_atual == '/':
                 self.avancar()
-                return Token('OPERADOR_ARITMETICO', '/', self.linha)
-            
-            # --- NOVO TOKEN: MÓDULO (%) ---
+                return Token('OP_ARITMETICO', '/', self.linha)
             if self.char_atual == '%':
                 self.avancar()
-                return Token('OPERADOR_ARITMETICO', '%', self.linha)
+                return Token('OP_ARITMETICO', '%', self.linha)
 
-            # --- OPERADORES RELACIONAIS E DE ATRIBUIÇÃO ---
-            
-            # --- MODIFICADO: Reconhece '=' (Atribuição) e '==' (Relacional) ---
+            # 4. REQUISITO: Reconhecer operadores relacionais
             if self.char_atual == '=':
                 if self.peek() == '=':
-                    self.avancar()
-                    self.avancar()
-                    return Token('OPERADOR_RELACIONAL', '==', self.linha)
+                    self.avancar(); self.avancar()
+                    return Token('OP_RELACIONAL', '==', self.linha)
                 else:
                     self.avancar()
-                    return Token('ATRIBUICAO', '=', self.linha) # Novo token de Atribuição
+                    return Token('ATRIBUICAO', '=', self.linha)
             
-            if self.char_atual == '!' and self.peek() == '=':
-                self.avancar()
-                self.avancar()
-                return Token('OPERADOR_RELACIONAL', '!=', self.linha)
+            if self.char_atual == '!':
+                if self.peek() == '=':
+                    self.avancar(); self.avancar()
+                    return Token('OP_RELACIONAL', '!=', self.linha)
+            
             if self.char_atual == '<':
                 self.avancar()
                 if self.char_atual == '=':
                     self.avancar()
-                    return Token('OPERADOR_RELACIONAL', '<=', self.linha)
-                return Token('OPERADOR_RELACIONAL', '<', self.linha)
+                    return Token('OP_RELACIONAL', '<=', self.linha)
+                return Token('OP_RELACIONAL', '<', self.linha)
+            
             if self.char_atual == '>':
                 self.avancar()
                 if self.char_atual == '=':
                     self.avancar()
-                    return Token('OPERADOR_RELACIONAL', '>=', self.linha)
-                return Token('OPERADOR_RELACIONAL', '>', self.linha)
+                    return Token('OP_RELACIONAL', '>=', self.linha)
+                return Token('OP_RELACIONAL', '>', self.linha)
 
-            # --- NOVOS TOKENS: PARÊNTESES ---
+            # Símbolos extras (parênteses, ponto e vírgula)
             if self.char_atual == '(':
                 self.avancar()
                 return Token('PARENTESE_ESQ', '(', self.linha)
             if self.char_atual == ')':
                 self.avancar()
                 return Token('PARENTESE_DIR', ')', self.linha)
-
-            # --- DELIMITADOR ---
             if self.char_atual == ';':
                 self.avancar()
-                return Token('FIM_DE_LINHA', ';', self.linha)
+                return Token('PONTO_VIRGULA', ';', self.linha)
             
-            # --- TRATAMENTO DE ERRO ---
-            # Se chegou até aqui, o caractere é inválido
+            # 8. e 9. REQUISITOS: Tratar erros (imprimir linha) e Recuperar erro (continuar)
             char_invalido = self.char_atual
             linha_erro = self.linha
-            self.avancar() # Ignora o caractere inválido e continua a análise
-            print(f"ERRO: Caractere inesperado '{char_invalido}' na linha {linha_erro}.")
+            self.avancar() # Recuperação: Ignora o char e vai pro próximo
+            print(f"ERRO LÉXICO: Caractere inválido '{char_invalido}' detectado na linha {linha_erro}.")
+            continue # Reinicia o loop para pegar o próximo token válido
 
         return Token('FIM_DE_ARQUIVO', None, self.linha)
 
+
+# --- ÁREA DE TESTE E VALIDAÇÃO ---
 if __name__ == "__main__":
-    # --- 1. ANÁLISE DO EXEMPLO FIXO (MANTIDA) ---
-    codigo_exemplo = """
-    // Exemplo atualizado
-    variavel_x = 10.5;
-    se (variavel_x > 10) entao
-        resto = variavel_x % 2;
+    
+    # Este código fonte cobre TODOS os 9 requisitos do professor
+    codigo_validacao = """
+    /* TESTE DE REQUISITOS 
+       Comentario de bloco (Req 7) 
+    */
+    
+    // Declaracao de variaveis (Req 5 e 6)
+    media_final = 0.0;
+    
+    se (nota1 >= 7.5) entao // (Req 1, 4 e 2)
+        contador = contador + 1; // (Req 3)
+    senao
+        // Teste de ERRO e RECUPERACAO (Req 8 e 9)
+        // O caractere '@' e invalido, mas o codigo deve ler o '100' depois dele
+        valor_invalido = 10 @ 100;
+        
+    faca calculo_final;
     """
-    print("--- 1. ANÁLISE DO EXEMPLO FIXO ---")
-    analisador_fixo = AnalisadorLexico(codigo_exemplo)
+
+    print("="*50)
+    print("INICIANDO VALIDAÇÃO COMPLETA DOS REQUISITOS")
+    print("="*50)
+    
+    analisador = AnalisadorLexico(codigo_validacao)
+    
     while True:
-        token = analisador_fixo.obter_proximo_token()
-        print(token)
+        token = analisador.obter_proximo_token()
+        
+        # Se for fim de arquivo, para
         if token.tipo == 'FIM_DE_ARQUIVO':
             break
             
-    # --- 2. NOVA SEÇÃO INTERATIVA (CORRIGIDA) ---
-    print("\n" + "="*40)
-    print("--- 2. TESTE INTERATIVO MULTI-LINHA ---")
-    
-    while True:
-        print("\nDigite o código abaixo.")
-        print("Pressione [Enter] para nova linha.")
-        print("Digite 'FIM' (em uma nova linha) para processar ou 'SAIR' para fechar.")
-        print("-" * 30)
+        print(token)
 
-        linhas_usuario = []
-        
-        # Loop para capturar múltiplas linhas
+    print("\n" + "="*50)
+    print("VERIFICAÇÃO DA TABELA DE SÍMBOLOS (Requisito 5)")
+    print("Identificadores encontrados devem estar listados abaixo:")
+    print("-" * 50)
+    for chave, valor in analisador.tabela_simbolos.items():
+        if valor.tipo == 'IDENTIFICADOR':
+            print(f" [NOVO ID] '{chave}' armazenado na tabela.")
+        elif valor.tipo == 'PALAVRA_CHAVE':
+             pass # Não precisa imprimir as palavras chaves padrão para não poluir
+             
+    print("\n" + "="*50)
+    print("TESTE INTERATIVO (Para você digitar seu código)")
+    print("Digite 'FIM' numa nova linha para processar ou 'SAIR' para fechar")
+    print("-" * 50)
+
+    # Loop interativo corrigido para funcionar no terminal
+    while True:
+        linhas = []
         while True:
             try:
                 linha = input()
+                if linha.strip().upper() == 'FIM':
+                    break
+                if linha.strip().lower() == 'sair':
+                    exit()
+                linhas.append(linha)
             except EOFError:
                 break
-                
-            # Verifica se o usuário quer sair do programa
-            if linha.strip().lower() == 'sair':
-                print("Programa encerrado.")
-                exit()
-            
-            # Verifica se o usuário terminou de digitar esse bloco
-            if linha.strip().upper() == 'FIM':
+        
+        if not linhas: continue
+        
+        codigo_user = "\n".join(linhas)
+        analisador_interativo = AnalisadorLexico(codigo_user)
+        
+        print("\n--- Tokens Identificados ---")
+        while True:
+            t = analisador_interativo.obter_proximo_token()
+            if t.tipo == 'FIM_DE_ARQUIVO':
                 break
-            
-            linhas_usuario.append(linha)
-
-        # Se não digitou nada e deu FIM, volta para o inicio
-        if not linhas_usuario:
-            continue
-
-        # Junta as linhas com quebra de linha (\n) para o analisador entender
-        codigo_usuario = "\n".join(linhas_usuario)
-
-        print(f"\n--- Analisando Bloco ---")
-        try:
-            analisador_interativo = AnalisadorLexico(codigo_usuario)
-            tokens_encontrados = []
-            
-            while True:
-                token = analisador_interativo.obter_proximo_token()
-                tokens_encontrados.append(str(token))
-                if token.tipo == 'FIM_DE_ARQUIVO':
-                    break
-            
-            print("Tokens Encontrados:")
-            for t in tokens_encontrados:
-                print(f"    {t}")
-                
-        except Exception as e:
-            print(f"Ocorreu um erro: {e}")
+            print(t)
+        print("-" * 30 + "\n")
