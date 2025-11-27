@@ -60,3 +60,21 @@ pular_espacos_e_comentarios(): Limpa a entrada antes da tokenização.
 
 ### 📝 Exemplo de Saída
 Para uma entrada como:
+
+C
+
+```bash
+se (x >= 10.5)
+```
+### O analisador gerará tokens semelhantes a:
+
+Plaintext
+
+```bash
+Token(PALAVRA_CHAVE, 'se', Linha: 1)
+Token(PARENTESE_ESQ, '(', Linha: 1)
+Token(IDENTIFICADOR, 'x', Linha: 1)
+Token(OP_RELACIONAL, '>=', Linha: 1)
+Token(NUMERO, 10.5, Linha: 1)
+Token(PARENTESE_DIR, ')', Linha: 1)
+```
